@@ -71,6 +71,8 @@ The Cyberport Startup Repository Scraper is a Python and Selenium based web scra
 
 ## log file
 You may also refer to the `scraper.log` file. 
+<img width="1126" alt="photo" src="https://github.com/user-attachments/assets/fa731e78-56d4-4b74-8e91-97c1d3eb5a91">
+
 
 - `script.log` stores all the errors when the scraper encounter a timeout while loading a page.
 ## Result 
