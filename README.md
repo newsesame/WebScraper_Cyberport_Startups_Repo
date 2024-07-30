@@ -5,15 +5,15 @@ The Cyberport Startup Repository Scraper is a Python and Selenium based web scra
 
 ## Approach
 ### 1. Basic Viewing on the Repository
-<img width="1000" alt="photo" src="https://github.com/user-attachments/assets/31ea8584-8854-4c24-9d14-db56b29fb58b">
-<img width="1000" alt="photo" src="https://github.com/user-attachments/assets/5a373994-5dd4-40bf-afb8-0da9619a917d">
+<img width="800" alt="photo" src="https://github.com/user-attachments/assets/31ea8584-8854-4c24-9d14-db56b29fb58b">
+<img width="800" alt="photo" src="https://github.com/user-attachments/assets/5a373994-5dd4-40bf-afb8-0da9619a917d">
 
 - Items are placed in the grey background area on the right.
 - 6 items are shown in each page.
 - 236 pages in total
 - 
 ### 2. Page for Each Item 
-<img width="1281" alt="photo 2024-07-31 上午2 03 06" src="https://github.com/user-attachments/assets/c2d3e06f-6d0d-40d5-bf2f-3446110bd6d2">
+<img width="800" alt="photo" src="https://github.com/user-attachments/assets/c2d3e06f-6d0d-40d5-bf2f-3446110bd6d2">
 
 **Columns:**
 - Contest-year
@@ -42,7 +42,7 @@ The Cyberport Startup Repository Scraper is a Python and Selenium based web scra
   
 ### 5. Travel the Page of Each Item
 <img width="500" alt="photo" src="https://github.com/user-attachments/assets/8783db0f-8f6e-42f8-bfe3-bad249ddea47">
-<img width="500" alt="螢幕截圖 2024-07-31 上午6 07 51" src="https://github.com/user-attachments/assets/f3ae8e89-eaeb-4db2-8f62-38dee0cd7d36">
+<img width="500" alt="photo" src="https://github.com/user-attachments/assets/f3ae8e89-eaeb-4db2-8f62-38dee0cd7d36">
 
 
 - Find out all the key-value div. 
@@ -70,11 +70,11 @@ The Cyberport Startup Repository Scraper is a Python and Selenium based web scra
 <img width="380" alt="photo" src="https://github.com/user-attachments/assets/d30405b0-832a-4bbd-a224-579c6b1f3353">
 
 ## log file
-You may also refer to the `scraper.log` file. 
+You may also refer to the `scraper.log` file in the directory. 
 <img width="1126" alt="photo" src="https://github.com/user-attachments/assets/fa731e78-56d4-4b74-8e91-97c1d3eb5a91">
 
 
 - `script.log` stores all the errors when the scraper encounter a timeout while loading a page.
 ## Result 
-Please refer to the `Result.xlsx`. You may find the information of all the startups on the cyberport repository there.
+Please refer to the `Result.xlsx` file in the directory. You may find the information of all the startups on the cyberport repository there.
   
