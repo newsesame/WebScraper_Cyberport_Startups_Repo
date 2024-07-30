@@ -1,36 +1,31 @@
 import re
+import logging
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 import time
-import csv
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
 import pandas as pd
 import os
 
-class Startup():
+logging.basicConfig(filename='scraper.log', level=logging.INFO,filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-    def __init__(self, name = "", year = "", website = "", sector = ""):
-
-
-
-        self.name = name
-        self.year = year
-        self.website = website
-        self.sector = sector
-        pass
 
 
 class StartupRepo():
 
-    def __init__(self, url:str):
+    def __init__(self, url:str, page_number_repo: int):
         options = webdriver.ChromeOptions()
         # options.add_argument('--start-maximized')  # Open browser in maximized mode
         options.add_argument('--disable-extensions')  # Disable extensions
         self.driver = webdriver.Chrome(options= options)
+        self.driver.set_page_load_timeout(10)
 
-        # Data from scraping the database
+
+        # Data for viewing the repo 
         self.url = url
+        self.page_number_repo = page_number_repo
         self.pages = []
         
         ## Startup Information
@@ -48,6 +43,9 @@ class StartupRepo():
         # Business Details
         self.sectors=[]
 
+        # Description
+        self.description = []
+
         # Mapping the target columns 
         self.table = {
             "contest-year" : self.contest_years,
@@ -56,7 +54,8 @@ class StartupRepo():
             "Intake Year" : self.intake_years,
             "Website": self.websites,
             "Cyberport Community Status":self.status ,
-            "Technology Sector": self.sectors
+            "Technology Sector": self.sectors,
+            "Company Description": self.description
             
         }
         
@@ -109,8 +108,25 @@ class StartupRepo():
             print(col+ ": ")
             print(data)
 
+
+    def load_page(self, url):
+        """
+        Visits the specified URL. If the page fails to load within the given time limit, the function will
+        log an error and retry loading the page.
+
+        Parameters:
+        url (str): The URL of the page to visit.
+        """
+        try:
+  
+            self.driver.get(url)
+            
+        except TimeoutException as e:
+            logging.error(f"Timeout while loading page {url}. Retrying...")
+            # self.driver.refresh()  # Refresh the page
+            self.load_page(url)  # Retry loading the page
         
-        
+
     def search(self, page_number: int ) -> None:
         """
         Searches through a specified number of pages on a website, extracting company names and URLs.
@@ -127,18 +143,17 @@ class StartupRepo():
                 # Visit each page of the database
           
                 url = self.url + str(i)
-                self.driver.get(url)          
-                self.driver.implicitly_wait(2)                
+                self.load_page(url)          
                 
-                # current_url = self.driver.current_url
-                # if '#' in current_url:
-                #     self.driver.execute_script(f"window.location.href = '{url}'")
-            
+                print("Repository Page "+str(i)+ " :")
+
+                self.driver.implicitly_wait(1)                
+                
                 ## Find Names
                 elements = self.driver.find_elements(By.CLASS_NAME, "product-item-link")
-                for elem in elements:
-                    self.names.append(elem.text)
+                self.names.extend([elem.text for elem in elements])
 
+                print("Cached Company Names " + str([elem.text for elem in elements]))
                 ## Find URLs 
                 elements = self.driver.find_elements(By.CLASS_NAME, "product-item-actions")
 
@@ -147,15 +162,17 @@ class StartupRepo():
                     target = elem.find_element(By.CSS_SELECTOR, 'a')
                     self.pages.append(target.get_attribute("href"))
 
-                self.driver.implicitly_wait(2)
-                self.driver.get("https://www.google.com/")
         
-        # Quit the web driver eventhough an error occurs
-        finally:
-            # self.driver.quit()
-            pass
+                # As urls of the target pages contain hastag, the browser has to be redirected to 
+                # another page between two target pages
+                self.driver.get("https://www.google.com/") 
+                self.driver.implicitly_wait(1)
 
+        except Exception as e:
+            logging.error(f"An error occurred: {e} while handling {url}")
 
+ 
+        
 
     def  travel_each_page(self) -> None :
         """
@@ -164,40 +181,48 @@ class StartupRepo():
         """
 
         date_pattern = r'^\d{4}$|^\d{4}-\d{2}$|^\d{4}-\d{2}-\d{2}$'
+        try:
+            for i in range(self.capacity()):
+                print("Company Name: "+ self.names[i]+ " | Item No. "+ str(i+1))
+                url = self.pages[i]
+                self.load_page(url)
 
-        for i in range(self.capacity()):
-            print("Company Name: "+ self.names[i]+ " | Item No. "+ str(i+1))
-            url = self.pages[i]
-            self.driver.get(url)
+                # Find out the list of parent div
+                elements = self.driver.find_elements(By.CSS_SELECTOR, "div.row.field-entry")
 
-            # Find out the list of parent div
-            elements = self.driver.find_elements(By.CSS_SELECTOR, "div.row.field-entry")
+                for element in elements:
 
-            for element in elements:
+                    # Reach to the label and value div
+                    label_div =  element.find_element(By.CSS_SELECTOR, "div.field-label.col-md-4")
+                    value_div = element.find_element(By.CSS_SELECTOR, "div.field-value.col-md-8")
 
-                # Reach to the label and value div
-                label_div =  element.find_element(By.CSS_SELECTOR, "div.field-label.col-md-4")
-                value_div = element.find_element(By.CSS_SELECTOR, "div.field-value.col-md-8")
+                    # If the label is stored in our table, append the value to the corresponding list
+                    if label_div.text in self.table:
+                        self.table[label_div.text].append(value_div.text)
+                        print("Cached ", label_div.text, value_div.text)
+                    
+                    # Otherwise, tell there is a new column
+                    else :
+                        print("New attribute found: ", label_div.text, value_div.text)
+                    
 
-                # If the label is stored in our table, append the value to the corresponding list
-                if label_div.text in self.table:
-                    self.table[label_div.text].append(value_div.text)
-                    print("Cached ", label_div.text, value_div.text)
-                
-                # Otherwise, tell there is a new column
-                else :
-                    print("New attribute found: ", label_div.text, value_div.text)
+                try:
+                    description_div = self.driver.find_element(By.CSS_SELECTOR, "div.akmarkdown-content")
+                    self.table["Company Description"].append(description_div.text)
+                    print("Cached  Company Description ", description_div.text)
+                except:
+                    pass
 
-            # print(list(self.table.values()))
+                # If some columns dont show in a page, add "NA" on the corresponding list.
+                for col in list(self.table.values()):
+                    
+                    if col is not self.pages and len(col) != i + 1:
+                        col.append("NA")
 
-            # If some columns dont show in a page, add "NA" on the corresponding list.
-            for col in list(self.table.values()):
-                
-                if col is not self.pages and len(col) != i + 1:
-                    col.append("NA")
+                print("Done")
 
-            print("Done")
-
+        except Exception as e:
+            logging.error(f"An error occurred: {e} while handling {url}")
         
 
     def output_to_file(self, arrays: list[list], column_names: list[str], filename: str) -> None:
@@ -237,12 +262,12 @@ class StartupRepo():
         """
         Runs the whole web scraping process.
         """
-        self.search(page_number= 2)
+        self.search(page_number= self.page_number_repo)
         self.travel_each_page()
         self.driver.close()
         self.info()
-        target_column_names =  ["Intake Year", "Intake Month", "Cyberport Community Status", "Technology Sector","Website" ]
-        self.output_to_file([self.names] + [self.table[col]for col in target_column_names], ["Company Names"] + target_column_names,"Result.xlsx" )
+        target_column_names =  ["Intake Year", "Intake Month", "Cyberport Community Status", "Technology Sector","Website", "Company Description" ]
+        self.output_to_file([self.names] + [self.table[col]for col in target_column_names], ["Company Names"] + target_column_names,"Resultss.xlsx" )
         
         if self.capacity_check():
             print("The totoal number of records is " + str(self.capacity()) +" .")
@@ -256,7 +281,7 @@ class StartupRepo():
 if __name__ == '__main__':
 
     url = "https://istartup.hk/en/startups/profile#sort=name&sortdir=asc&page="
-    SR = StartupRepo(url = url)
+    SR = StartupRepo(url = url, page_number_repo= 236)
     SR.run()
 
 
